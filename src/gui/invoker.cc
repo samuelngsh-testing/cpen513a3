@@ -18,9 +18,9 @@ Invoker::Invoker(QWidget *parent)
 void Invoker::respondToNewGraph(const sp::Graph &graph)
 {
   if (graph.numBlocks() > 30) {
-    cb_no_gui->setChecked(true);
+    cb_no_dtv->setChecked(true);
   } else {
-    cb_no_gui->setChecked(false);
+    cb_no_dtv->setChecked(false);
   }
 }
 
@@ -32,7 +32,7 @@ void Invoker::invokePlacement()
   p_set.gui_update_batch = le_gui_update_batch->text().toInt();
   p_set.prune_half = cb_prune_half->isChecked();
   p_set.prune_by_cost = cb_prune_by_cost->isChecked();
-  p_set.no_gui = cb_no_gui->isChecked();
+  p_set.no_dtv = cb_no_dtv->isChecked();
   p_set.verbose = cb_verbose->isChecked();
 
   emit sig_runPartitioner(p_set);
@@ -56,8 +56,8 @@ void Invoker::initGui()
   cb_prune_by_cost = new QCheckBox;
   cb_prune_by_cost->setChecked(p_set.prune_by_cost);
 
-  cb_no_gui = new QCheckBox;
-  cb_no_gui->setChecked(p_set.no_gui);
+  cb_no_dtv = new QCheckBox;
+  cb_no_dtv->setChecked(p_set.no_dtv);
 
   cb_verbose = new QCheckBox;
   cb_verbose->setChecked(p_set.verbose);
@@ -67,8 +67,8 @@ void Invoker::initGui()
 
   // init gui elements
   connect(pb_run_partitioner, &QAbstractButton::released, this, &Invoker::invokePlacement);
-  connect(cb_no_gui, &QCheckBox::stateChanged,
-      [this](int state) {emit sig_noGuiState(state);});
+  connect(cb_no_dtv, &QCheckBox::stateChanged,
+      [this](int state) {emit sig_grayOutDecisionTree(state);});
 
   // add items to layout
   QFormLayout *fl_gen = new QFormLayout();
@@ -76,7 +76,7 @@ void Invoker::initGui()
   fl_gen->addRow("GUI update batch", le_gui_update_batch);
   // NOTE just leaving this setting always default: fl_gen->addRow("Prune half tree", cb_prune_half);
   fl_gen->addRow("Prune by cost", cb_prune_by_cost);
-  fl_gen->addRow("No viewer update", cb_no_gui);
+  fl_gen->addRow("No viewer update", cb_no_dtv);
   fl_gen->addRow("Verbose", cb_verbose);
 
   QVBoxLayout *vl_main = new QVBoxLayout();

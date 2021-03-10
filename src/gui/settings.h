@@ -19,8 +19,11 @@ namespace st {
   {
   public:
 
-    //! Graphics viewer scaling factor (how many pixels per grid cell).
+    //! Decision tree scaling factor.
     static qreal sf;
+
+    //! Graphics viewer scaling factor (how many pixels per grid cell).
+    static qreal sf_grid;
 
     //! \brief Return a generated color.
     //!

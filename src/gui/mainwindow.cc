@@ -27,7 +27,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::resizeEvent(QResizeEvent *e)
 {
-  viewer_->fitProblemInView();
+  dt_viewer_->fitProblemInView();
+  p_viewer_->fitProblemInView();
   QMainWindow::resizeEvent(e);
 }
 
@@ -40,9 +41,11 @@ void MainWindow::readAndShowProblem(const QString &in_path)
   graph_ = new sp::Graph(in_path);
 
   // show the problem
-  viewer_->showGraph(graph_);
+  dt_viewer_->showGraph(graph_);
+  p_viewer_->clearProblem();
   tchart_->initToGraph(graph_);
   invoker_->respondToNewGraph(*graph_);
+  dw_invoker_->raise();
 
   // TODO if size greater than 30, default to no GUI update
 
@@ -59,62 +62,60 @@ void MainWindow::runPartitioner(const pt::PSettings &p_settings)
         "placement with no loaded problem has been halted.");
     return;
   }
-  viewer_->showGraph(graph_); // redraw the graph
+  dt_viewer_->showGraph(graph_); // redraw the graph
   tchart_->initToGraph(graph_);
   dw_tchart_->raise();
   qDebug() << "Dispatching partition job.";
-  pt::Partitioner partitioner(*graph_, p_settings);
+  if (partitioner != nullptr) {
+    delete partitioner;
+  }
+  partitioner = new pt::Partitioner(*graph_, p_settings);
 
   // connect signals
-  connect(&partitioner, &pt::Partitioner::sig_pruned, 
-      [this](QQueue<QPair<int,QVector<int>>> *bid_as_pairs)
-      {
-        while (!bid_as_pairs->isEmpty()) {
-          const QPair<int,QVector<int>> &bid_as_pair = bid_as_pairs->dequeue();
-          viewer_->addPruneMask(bid_as_pair.first, bid_as_pair.second);
-        }
-        qApp->processEvents();
-      });
-  connect(&partitioner, &pt::Partitioner::sig_updateTelem,
+  if (!p_settings.no_dtv) {
+    connect(partitioner, &pt::Partitioner::sig_pruned, 
+        [this](QQueue<QPair<int,QVector<int>>> *bid_as_pairs)
+        {
+          while (!bid_as_pairs->isEmpty()) {
+            const QPair<int,QVector<int>> &bid_as_pair = bid_as_pairs->dequeue();
+            dt_viewer_->addPruneMask(bid_as_pair.first, bid_as_pair.second);
+          }
+          qApp->processEvents();
+        });
+  }
+  connect(partitioner, &pt::Partitioner::sig_updateTelem,
       [this](long visited, long pruned, int best_cut)
       {
         tchart_->updateTelemetry(visited, pruned, best_cut);
         qApp->processEvents();
         });
-  /* TODO remove
-  connect(&placer, &pc::Placer::sig_updateGui,
-      [this](sp::Chip *chip)
-      {
-        // update the chip upon instructions from the placer
-        viewer_->showChip(chip);
-        qApp->processEvents();
-      });
-  connect(&placer, &pc::Placer::sig_updateChart, tchart_, &TelemetryChart::addTelemetry);
-  */
+  connect(partitioner, &pt::Partitioner::sig_bestPart,
+      p_viewer_, &PartViewer::showGraphPart);
 
   // run the placement
-  partitioner.runPartitioner();
-  qDebug() << "Partition job complete.";
+  partitioner->runPartitioner();
 }
 
 void MainWindow::initGui()
 {
   // init GUI elements
-  viewer_ = new Viewer(this);
+  dt_viewer_ = new DTViewer(this);
+  p_viewer_ = new PartViewer(this);
   invoker_ = new Invoker(this);
   tchart_ = new TelemetryChart(this);
 
   // signals
   connect(invoker_, &Invoker::sig_runPartitioner, this, &MainWindow::runPartitioner);
-  connect(invoker_, &Invoker::sig_noGuiState, 
-      [this](bool no_gui) {viewer_->setGuiState(!no_gui);});
+  connect(invoker_, &Invoker::sig_grayOutDecisionTree, 
+      [this](bool no_dtv) {dt_viewer_->setGrayOut(no_dtv);});
 
   // layouts
-  QHBoxLayout *hbl = new QHBoxLayout(); // main layout
-  hbl->addWidget(viewer_);
+  QVBoxLayout *vbl = new QVBoxLayout(); // main layout
+  vbl->addWidget(dt_viewer_);
+  vbl->addWidget(p_viewer_);
 
   QWidget *w_main = new QWidget(this);  // main widget that holds everything
-  w_main->setLayout(hbl);
+  w_main->setLayout(vbl);
   setCentralWidget(w_main);
 
   // set dock widgets

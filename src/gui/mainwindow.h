@@ -11,7 +11,8 @@
 
 #include <QtWidgets>
 #include "spatial.h"
-#include "viewer.h"
+#include "dtviewer.h"
+#include "partviewer.h"
 #include "invoker.h"
 #include "telemetrychart.h"
 #include "partitioner/partitioner.h"
@@ -56,12 +57,15 @@ namespace gui {
 
     // Private variables
     // TODO remove sp::Chip *chip_=nullptr;    //!< Pointer to the chip.
-    sp::Graph *graph_=nullptr;  //!< Pointer to the current graph.
-    Viewer *viewer_=nullptr;    //!< Pointer to the GUI viewer.
-    Invoker *invoker_=nullptr;  //!< Pointer to the Invoker widget.
+    sp::Graph *graph_=nullptr;      //!< Pointer to the current graph.
+    DTViewer *dt_viewer_=nullptr;   //!< Pointer to the binary tree viewer.
+    PartViewer *p_viewer_=nullptr;  //!< Partition viewer.
+    Invoker *invoker_=nullptr;      //!< Pointer to the Invoker widget.
     QDockWidget *dw_invoker_=nullptr; //!< Dockwidget for the invoker.
     TelemetryChart *tchart_=nullptr;  //!< Pointer to the telemetry chart.
     QDockWidget *dw_tchart_=nullptr;  //!< Dockwidget for telemetry chart.
+
+    pt::Partitioner *partitioner=nullptr; //!< Partitioner currently in use.
 
   };
 

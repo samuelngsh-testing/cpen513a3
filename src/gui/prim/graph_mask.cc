@@ -89,7 +89,7 @@ QRectF GraphMask::boundingRect() const
 void GraphMask::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget*)
 {
   QColor col;
-  if (!gui_state_) {
+  if (gray_out_) {
     col = QColor("#AAAAAA");
   } else if (type_ == Explorable) {
     col = QColor("#00FF00");

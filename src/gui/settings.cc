@@ -12,6 +12,7 @@
 using namespace st;
 
 qreal Settings::sf = 1;
+qreal Settings::sf_grid = 25;
 
 QList<QColor> Settings::gcols;
 int Settings::gcols_for=0;

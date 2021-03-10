@@ -27,6 +27,8 @@ int main(int argc, char **argv) {
       " be partitioned (optional, can be selected from the GUI).");
   parser.addOption({"headless", "Run the problem in headless mode and output "
       "the final cost as terminal output. Must provide in_file in this case."});
+  parser.addOption({"threads", "Specify the number of threads to run in headless"
+      " mode.", "n"});
   parser.addOption({"verbose", "Verbose terminal outputs (only applicable to "
       "headless mode."});
   parser.process(app);
@@ -43,7 +45,13 @@ int main(int argc, char **argv) {
   if (parser.isSet("headless")) {
     // run the problem in headless mode and output cost in terminal
     pt::PSettings settings;
+    settings.headless = true;
     settings.verbose = parser.isSet("verbose");
+    if (parser.isSet("threads")) {
+      int n_th = parser.value("threads").toInt();
+      qDebug() << QString("Running %1 threads").arg(n_th);
+      settings.threads = n_th;
+    }
     pt::Partitioner partitioner(in_path, settings);
     partitioner.runPartitioner();
     return 0;

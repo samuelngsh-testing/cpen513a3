@@ -30,10 +30,13 @@ set(LIB_SOURCES
     partitioner/partitioner.cc
     gui/settings.cc
     gui/mainwindow.cc
-    gui/viewer.cc
+    gui/dtviewer.cc
+    gui/partviewer.cc
     gui/invoker.cc
     gui/telemetrychart.cc
     gui/prim/graph_mask.cc
+    gui/prim/net.cc
+    gui/prim/cell.cc
     #    gui/prim/cell.cc
     #    gui/prim/net.cc
     )
@@ -42,10 +45,13 @@ set(LIB_HEADERS
     partitioner/partitioner.h
     gui/settings.h
     gui/mainwindow.h
-    gui/viewer.h
+    gui/dtviewer.h
+    gui/partviewer.h
     gui/invoker.h
     gui/telemetrychart.h
     gui/prim/graph_mask.h
+    gui/prim/net.h
+    gui/prim/cell.h
     #    gui/invoker.h
     #    gui/prim/cell.h
     #    gui/prim/net.h

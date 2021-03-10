@@ -58,11 +58,11 @@ namespace gui {
     GraphMask(MaskType type, int bid, int num_blocks, 
         const QVector<int> &assignments);
 
-    //! Overriden method to return the proper bounding rectangle of this cell.
+    //! Return the bounding rect of the binary tree.
     virtual QRectF boundingRect() const override;
 
     //! Set GUI visualization state (whether this mask will be used).
-    void setGuiState(bool s) {gui_state_ = s;}
+    void setGrayOut(bool s) {gray_out_ = s;}
 
     //! Overridden method to paint this graph mask on scene.
     virtual void paint(QPainter *, const QStyleOptionGraphicsItem *, QWidget *) override;
@@ -72,7 +72,7 @@ namespace gui {
     MaskType type_;
     QVector<QPointF> graph_points_; //!< Points that define the outer edges of the graph.
     QRectF bounding_rect_;          //!< Store the bounding rect.
-    bool gui_state_=true;           //!< Respond to no GUI options.
+    bool gray_out_=false;           //!< Respond to no GUI options.
 
   };
 

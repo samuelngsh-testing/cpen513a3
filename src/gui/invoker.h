@@ -37,7 +37,7 @@ namespace gui {
     void sig_runPartitioner(pt::PSettings);
 
     //! Emit no GUI update state.
-    void sig_noGuiState(bool);
+    void sig_grayOutDecisionTree(bool);
 
   private:
 
@@ -49,7 +49,7 @@ namespace gui {
     QLineEdit *le_gui_update_batch;
     QCheckBox *cb_prune_half;
     QCheckBox *cb_prune_by_cost;
-    QCheckBox *cb_no_gui;
+    QCheckBox *cb_no_dtv;
     QCheckBox *cb_verbose;
 
     /* TODO remove
