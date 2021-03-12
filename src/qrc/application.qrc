@@ -1,0 +1,19 @@
+<RCC>
+<qresource>
+    <!-- test problem files -->
+    <file>test_problems/atest2.txt</file>
+    <file>test_problems/mini_props.json</file>
+    <file>test_problems/atest3.txt</file>
+    <file>test_problems/baby.txt</file>
+    <!-- benchmark files -->
+    <file>benchmarks/cc.txt</file>
+    <file>benchmarks/cm82a.txt</file>
+    <file>benchmarks/cm138a.txt</file>
+    <file>benchmarks/cm150a.txt</file>
+    <file>benchmarks/cm162a.txt</file>
+    <file>benchmarks/con1.txt</file>
+    <file>benchmarks/ugly8.txt</file>
+    <file>benchmarks/ugly16.txt</file>
+    <file>benchmarks/z4ml.txt</file>
+</qresource>
+</RCC>
