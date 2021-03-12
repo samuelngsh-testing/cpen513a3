@@ -7,6 +7,7 @@
 
 #include "partitioner.h"
 #include <thread>
+#include <math.h>
 
 using namespace pt;
 
@@ -96,6 +97,9 @@ Partitioner::~Partitioner()
 
 void Partitioner::runPartitioner()
 {
+  // start wall timer
+  wall_timer_.start();
+
   // determine threads to spawn
   quint64 actual_th = std::min(
       {
@@ -118,36 +122,9 @@ void Partitioner::runPartitioner()
     best_assignment[i] = -1;
   }
 
-  // prepare pre-assignments and spawn threads
-  /* TODO remove
-  if (actual_th_count_ == 0) { // TODO hack
-    // simpler routine for just a single thread
-    int best_cost = -1;
-    visited_leaves_.resize(1);
-    pruned_leaves_.resize(1);
-    visited_leaves_[0] = 0;
-    pruned_leaves_[0] = 0;
-    bid_assignment_pairs_.resize(1);
-    ::assignNext(-1, this, curr_assignment, 0, 0, 0, &best_assignment, &best_cost, -1);
-    // re-emit leftover assignments and telemetries
-    if (!bid_assignment_pairs_[0].isEmpty()) {
-      emit sig_pruned(&bid_assignment_pairs_[0]);
-    }
-    emit sig_updateTelem(visited_leaves_[0], pruned_leaves_[0], best_cost_);
-    qDebug() << "best cost: " << best_cost;
-  } else {
-  */
   // multi-threaded routine
   int sleep_ms = (graph_.numBlocks() >= 70) ? 1000:100;
-  /* TODO remove
-     QVector<int> best_costs;
-     QVector<QVector<int>> best_assignments;
-     */
   QVector<bool> finished;
-  /* TODO remove
-     best_costs.resize(actual_th_count_);
-     best_assignments.resize(actual_th_count_);
-     */
   best_costs_.resize(actual_th_count_);
   best_assignments_.resize(actual_th_count_);
   bid_assignment_pairs_.resize(actual_th_count_);
@@ -182,10 +159,6 @@ void Partitioner::runPartitioner()
     qDebug() << curr_assignment;
     // spawn threads
     prune_mutex_.append(new QMutex());
-    /* TODO remove
-       best_assignments[tid].resize(graph_.numBlocks());
-       best_costs[tid] = -1;
-       */
     best_assignments_[tid].resize(graph_.numBlocks());
     best_costs_[tid] = -1;
     finished[tid] = false;
@@ -195,62 +168,28 @@ void Partitioner::runPartitioner()
         this);
     worker_th->start();
     threads.append(worker_th);
-    /* TODO remove
-       connect(worker_th, &QThread::finished,
-       [&finished, tid](){finished[tid]=true;});
-       */
-    connect(worker_th, &QThread::finished, this, &Partitioner::processCompletedThread);
+    if (!settings_.headless) {
+      connect(worker_th, &QThread::finished, this, &Partitioner::processCompletedThread);
+    }
   }
 
   // set up timer to update GUI periodically while the workers run
-  qDebug() << "Setting up GUI update timer";
-  gui_update_timer_ = new QTimer(this);
-  connect(gui_update_timer_, &QTimer::timeout, [this](){sendGuiUpdates();});
-  gui_update_timer_->start(sleep_ms);
+  if (!settings_.headless) {
+    qDebug() << "Setting up GUI update timer";
+    gui_update_timer_ = new QTimer(this);
+    connect(gui_update_timer_, &QTimer::timeout, [this](){sendGuiUpdates();});
+    gui_update_timer_->start(sleep_ms);
+  }
 
   qDebug() << "Workers setup complete. Wait for completion.";
 
-    // wait for completion
-    /* TODO remove
-    qDebug() << "Waiting for all instances to complete...";
+  if (settings_.headless) {
     for (auto &th : threads) {
       th->wait();
     }
-    */
-    /* TODO remove
-    while (!std::all_of(finished.cbegin(), finished.cend(), [](bool f){return f;})) {
-      msleep(sleep_ms);
-      if (!settings_.headless) {
-        emitPrunedBranches();
-        emit sig_updateTelem(visitedLeafCount(), prunedLeafCount(), best_cost_);
-      }
-    }
-    */
-
-    // tidy up
-    /* TODO remove
-    qDebug() << "Tidying up after partitioning";
-    emitPrunedBranches(true);
-    emit sig_updateTelem(visitedLeafCount(), prunedLeafCount(), best_cost_);
-
-    // TODO grab the best result out of the list. Just printing whole best_costs array to term for now
-    qDebug() << "Best cost list:" << best_costs;
-    // emit the best assignment
-    int best_cost = -1;
-    for (quint64 tid=0; tid<actual_th_count_; tid++) {
-      if (best_cost == -1 || best_costs[tid] >= 0) {
-        best_cost = best_costs[tid];
-        best_assignment = best_assignments[tid];
-      }
-    }
-    */
-  //}
-  // TODO remove if finish signal works
-  /* TODO remove
-  if (!settings_.headless) {
-    emit sig_bestPart(&graph_, best_assignment);
+    qDebug() << "Headless partitioning complete.";
+    processCompletedThread();
   }
-  */
 }
 
 void Partitioner::newPrune(int tid, int bid, const QVector<int> &assignments)
@@ -267,13 +206,15 @@ void Partitioner::newPrune(int tid, int bid, const QVector<int> &assignments)
   } else {
     // thread-safe way to enqueue prune GUI updates, but rely on main loop to 
     // actually emit the changes
-    if (!settings_.no_dtv && !settings_.headless) {
+    if (!(settings_.no_dtv || settings_.headless)) {
       QMutexLocker locker(prune_mutex_[tid]);
       bid_assignment_pairs_[tid].enqueue(qMakePair(bid, assignments));
     }
   }
   if (tid < 0) tid = 0;
+  /* TODO uncomment
   pruned_leaves_[tid] += std::llround(std::pow(2, graph_.numBlocks()-bid));
+  */
 }
 
 void Partitioner::leafReachedExchange(int tid, int *local_best_cost, int &global_best_cost)
@@ -293,13 +234,15 @@ void Partitioner::leafReachedExchange(int tid, int *local_best_cost, int &global
 
 void Partitioner::processCompletedThread()
 {
+  qDebug() << "A thread has completed. Processing completion actions for it...";
+
   complete_mutex_.lock();
 
-  qDebug() << "A thread has completed. Processing completion actions for it...";
   if (--remaining_th_ == 0) {
-    qDebug() << "All threads have completed. Processing completion actions...";
     // all done, wrap up
+    qDebug() << "All threads have completed. Processing completion actions...";
     gui_update_timer_->stop();
+    qint64 elapsed_time = wall_timer_.elapsed();
 
     qDebug() << "Tidying up after partitioning";
     sendGuiUpdates(true);
@@ -317,7 +260,7 @@ void Partitioner::processCompletedThread()
 
     // emit the best partition
     if (!settings_.headless) {
-      emit sig_bestPart(&graph_, best_assignment);
+      emit sig_bestPart(&graph_, best_assignment, elapsed_time);
     }
   }
 
@@ -433,9 +376,18 @@ void PartitionerThread::traverseProblemSpace()
       continue;
     }
 
-    int cut_size = sp::Chip::calcCost(parent_->graph(), p.assignment);
+    if (p.cut_size < 0) {
+      p.cut_size = sp::Chip::calcCost(parent_->graph(), p.assignment);
+    } else if (settings_.sanity_check) {
+      int true_cut_size = sp::Chip::calcCost(parent_->graph(), p.assignment);
+      if (p.cut_size != true_cut_size) {
+        qWarning() << QString("Delta cut-size %1 is different from calculated "
+            "cut size %2").arg(p.cut_size).arg(true_cut_size) << p.assignment;
+        p.cut_size = sp::Chip::calcCost(parent_->graph(), p.assignment);
+      }
+    }
     if (parent_->settings().prune_by_cost && global_best_cost >= 0
-        && cut_size > global_best_cost) {
+        && p.cut_size > global_best_cost) {
       // prune by cost
       if (parent_->settings().verbose) {
         qDebug() << "Pruned costly branch at" << p.assignment;
@@ -444,24 +396,47 @@ void PartitionerThread::traverseProblemSpace()
     } else if (p.bid == parent_->graph().numBlocks()) {
       // reached leaf, calc cost and update best
       if (parent_->settings().verbose) {
-        qDebug() << "Leaf reached with cost" << cut_size << p.assignment;
+        qDebug() << "Leaf reached with cost" << p.cut_size << p.assignment;
       }
-      if (cut_size < *local_best_cost_ || *local_best_cost_ < 0) {
-        *local_best_cost_ = cut_size;
+      if (p.cut_size < *local_best_cost_ || *local_best_cost_ < 0) {
+        *local_best_cost_ = p.cut_size;
         *best_assignment_ = p.assignment;
       }
       parent_->leafReachedExchange(tid_, local_best_cost_, global_best_cost);
     } else {
-      ProblemNodeParams next_p_l(p.assignment, p.bid+1, p.part_a_count, p.part_b_count);
+      // calculate next cut sizes
+      int cut_size_r = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 1);
+      int cut_size_l = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 0);
+      int next_bid = p.bid;
+      // repurpose p as next left branch, make a copy for right branch
+      ++p.bid;
+      ProblemNodeParams next_p_r(p);
+      // push right branch into traversal stack
+      next_p_r.cut_size = cut_size_r;
+      next_p_r.assignment[next_bid] = 1;
+      ++next_p_r.part_b_count;
+      problem_stack.push(next_p_r);
+      // push left branch
+      p.cut_size = cut_size_l;
+      p.assignment[next_bid] = 0;
+      ++p.part_a_count;
+      problem_stack.push(p);
+
+      /* TODO remove
+      ProblemNodeParams next_p_l(p.assignment, p.bid+1, p.part_a_count, 
+          p.part_b_count);
       ProblemNodeParams next_p_r(next_p_l);
       // push right branch into traversal stack
+      next_p_r.cut_size = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 1);
       next_p_r.assignment[p.bid] = 1;
       next_p_r.part_b_count += 1;
       problem_stack.push(next_p_r);
       // push left branch into traversal stack
+      next_p_l.cut_size = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 0);
       next_p_l.assignment[p.bid] = 0;
       next_p_l.part_a_count += 1;
       problem_stack.push(next_p_l);
+      */
     }
 
   }

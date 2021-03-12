@@ -99,6 +99,9 @@ namespace sp {
      * Return the cost delta if the indexed block is set to the specified 
      * partition.
      */
+    static int calcCostDelta(const Graph &graph, const QVector<int> &block_part,
+        int bid, int part);
+
     // TODO add static version for part override
     int calcCostDelta(int bid, int part) const;
 
@@ -116,10 +119,10 @@ namespace sp {
      * IDs to override and the partitions to pretend the block is in.
      */
     static int netCost(int nid, const Graph &graph, const QVector<int> &block_part,
-        const QMap<int,int> &bid_part_overrides={});
+        int override_bid=-1, int override_part=-1);
 
     //! Net cost override call.
-    int netCost(int nid, const QMap<int,int> &bid_part_overrides={}) const;
+    int netCost(int nid, int override_bid, int override_part) const;
 
     Graph graph_;   //!< The graph to be mapped onto this chip.
     int cost_;      //!< The cost associated with the current partition assignment.

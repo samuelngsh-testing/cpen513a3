@@ -51,6 +51,7 @@ namespace gui {
     QCheckBox *cb_prune_by_cost;
     QCheckBox *cb_no_dtv;
     QCheckBox *cb_verbose;
+    QCheckBox *cb_sanity_check;
 
     /* TODO remove
     // Private variables, the names basically correspond to pc::SASettings.

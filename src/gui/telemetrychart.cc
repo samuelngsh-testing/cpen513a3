@@ -77,6 +77,7 @@ void TelemetryChart::clearTelemetries()
   ps_pruned_->setValue(0);
   ps_unvisited_->setValue(1);
   l_curr_best_cut_->setText("");
+  l_wall_time_->setText("");
   l_total_leaves_->setText("");
   l_visited_->setText("");
   l_pruned_->setText("");
@@ -103,6 +104,7 @@ void TelemetryChart::initGui()
 
   // initialize status form
   l_curr_best_cut_ = new QLabel();
+  l_wall_time_ = new QLabel();
   l_total_leaves_ = new QLabel();
   l_visited_ = new QLabel();
   l_pruned_ = new QLabel();
@@ -113,6 +115,7 @@ void TelemetryChart::initGui()
   fl_status->addRow("Visited leaves", l_visited_);
   fl_status->addRow("Pruned leaves", l_pruned_);
   fl_status->addRow("Unvisited leaves", l_unvisited_);
+  fl_status->addRow("Wall time (ms)", l_wall_time_);
 
   // set layout
   QVBoxLayout *vb = new QVBoxLayout();

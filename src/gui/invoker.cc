@@ -34,6 +34,7 @@ void Invoker::invokePlacement()
   p_set.prune_by_cost = cb_prune_by_cost->isChecked();
   p_set.no_dtv = cb_no_dtv->isChecked();
   p_set.verbose = cb_verbose->isChecked();
+  p_set.sanity_check = cb_sanity_check->isChecked();
 
   emit sig_runPartitioner(p_set);
 }
@@ -62,6 +63,9 @@ void Invoker::initGui()
   cb_verbose = new QCheckBox;
   cb_verbose->setChecked(p_set.verbose);
 
+  cb_sanity_check = new QCheckBox;
+  cb_sanity_check->setChecked(p_set.sanity_check);
+
   QPushButton *pb_run_partitioner = new QPushButton("Run");
   pb_run_partitioner->setShortcut(tr("CTRL+R"));
 
@@ -78,6 +82,7 @@ void Invoker::initGui()
   fl_gen->addRow("Prune by cost", cb_prune_by_cost);
   fl_gen->addRow("No viewer update", cb_no_dtv);
   fl_gen->addRow("Verbose", cb_verbose);
+  fl_gen->addRow("Sanity check", cb_sanity_check);
 
   QVBoxLayout *vl_main = new QVBoxLayout();
   vl_main->addLayout(fl_gen);

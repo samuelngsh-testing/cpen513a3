@@ -90,7 +90,11 @@ void MainWindow::runPartitioner(const pt::PSettings &p_settings)
         qApp->processEvents();
         });
   connect(partitioner, &pt::Partitioner::sig_bestPart,
-      p_viewer_, &PartViewer::showGraphPart);
+      [this](sp::Graph *graph, const QVector<int> block_part, qint64 elapsed_time)
+      {
+        p_viewer_->showGraphPart(graph, block_part);
+        tchart_->setElapsedTime(elapsed_time);
+      });
 
   // run the placement
   partitioner->runPartitioner();

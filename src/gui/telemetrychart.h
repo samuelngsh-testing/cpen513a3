@@ -32,6 +32,9 @@ namespace gui {
     //! Update visit/pruned values
     void updateTelemetry(quint64 visited, quint64 pruned, int best_cut);
 
+    //! Set elapsed time
+    void setElapsedTime(qint64 elapsed_time) {l_wall_time_->setText(QString("%1").arg(elapsed_time));}
+
     //! Clear telemetries.
     void clearTelemetries();
 
@@ -57,6 +60,7 @@ namespace gui {
     QLabel *l_pruned_;        //!< Pruned leaf count.
     QLabel *l_unvisited_;     //!< Unvisited leaf count.
     QLabel *l_curr_best_cut_; //!< Current best cut size.
+    QLabel *l_wall_time_;     //!< Wall time.
 
     // TODO remove old vars below
     /*

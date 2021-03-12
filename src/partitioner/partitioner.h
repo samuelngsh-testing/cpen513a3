@@ -40,8 +40,20 @@ namespace pt {
 
     // preferences
     bool no_dtv=false;        //!< No decision tree view
+    bool no_pie=false;        //!< No pie chart view
     bool headless=false;      //!< Running in headless mode
-    bool verbose=false;       //!< Print diagnostics. TODO change to default false at launch
+    bool verbose=false;       //!< Print diagnostics
+    bool sanity_check=false;  //!< Run sanity checks
+  };
+
+  /* \brief Key results from the partitioner
+   */
+  struct PResults
+  {
+    int best_cut_size;
+    quint64 visited_leaves;
+    quint64 pruned_leaves;
+    qint64 wall_time;
   };
 
   /*! \brief Partitioning algorithm class.
@@ -96,7 +108,10 @@ namespace pt {
     void sig_updateTelem(quint64 visited, quint64 pruned, int best_cut);
 
     //! Emit the best partition.
-    void sig_bestPart(sp::Graph *graph, const QVector<int> block_part);
+    void sig_bestPart(sp::Graph *graph, const QVector<int> block_part, qint64 elapsed_time);
+
+    //! Emit packaged results mainly for benchmarking.
+    void sig_packagedResults(PResults results);
 
   private:
 
@@ -127,7 +142,8 @@ namespace pt {
     QVector<QQueue<QPair<int,QVector<int>>>> bid_assignment_pairs_;
 
     // multi-threaded programming
-    quint64 actual_th_count_; //!< Count of actual threads spawned.
+    QElapsedTimer wall_timer_;  //!< Keep track of wall time.
+    quint64 actual_th_count_;   //!< Count of actual threads spawned.
     int split_at_bid_;
     QList<QThread*> threads;
     int remaining_th_;
@@ -138,8 +154,9 @@ namespace pt {
   };
 
   //! Parameters for a node in the decision tree.
-  struct ProblemNodeParams
+  class ProblemNodeParams
   {
+  public:
     //! Empty constructor.
     ProblemNodeParams() {};
 
@@ -147,12 +164,13 @@ namespace pt {
     ProblemNodeParams(const QVector<int> &assignment, int bid, 
         quint64 part_a_count, quint64 part_b_count)
       : assignment(assignment), bid(bid), part_a_count(part_a_count),
-        part_b_count(part_b_count) {};
+        part_b_count(part_b_count), cut_size(-1) {};
 
     QVector<int> assignment;
     int bid;
     quint64 part_a_count;
     quint64 part_b_count;
+    int cut_size;
   };
 
   class PartitionerThread : public QThread

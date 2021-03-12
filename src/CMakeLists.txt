@@ -27,6 +27,7 @@ qt5_add_resources(CUSTOM_RSC qrc/application.qrc)
 # source and header files
 set(LIB_SOURCES
     spatial.cc
+    benchmarker.cc
     partitioner/partitioner.cc
     gui/settings.cc
     gui/mainwindow.cc
@@ -42,6 +43,7 @@ set(LIB_SOURCES
     )
 set(LIB_HEADERS
     spatial.h
+    benchmarker.h
     partitioner/partitioner.h
     gui/settings.h
     gui/mainwindow.h
