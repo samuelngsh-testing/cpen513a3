@@ -19,19 +19,12 @@ namespace pt {
   // forward declarations
   class Partitioner;
 
-  //! Recursively assign blocks to partitions (Steve's routine).
-  // TODO parallel implementation could run this to a certain level, then split
-  // children to different threads
-  void assignNext(int tid, Partitioner *partitioner, const QVector<int> &curr_assignment,
-      int bid, quint64 part_a_count, quint64 part_b_count, QVector<int> *best_assignment,
-      int *local_best_cost, int global_best_cost);
-
   /* \brief Settings for the partitioner
    */
   struct PSettings
   {
     // runtime settings
-    int threads=1;            //!< CPU threads to use, must be 2^N. TODO change to 1 at launch
+    int threads=1;            //!< CPU threads to use, must be 2^N.
     int gui_update_batch=100; //!< Update GUI each time this number of prune branches have been stored
 
     // pruning settings
@@ -67,15 +60,14 @@ namespace pt {
   public:
     /*! \brief Contructor.
      *
-     * Constructor taking the problem. TODO pointer to 
-     * some data class for main GUI visualization
+     * Constructor taking the problem.
      */
     Partitioner(const sp::Graph &graph, const PSettings &settings=PSettings());
 
     //! Destructor.
     ~Partitioner();
 
-    //! Run the partitioner. TODO settings if any
+    //! Run the partitioner.
     void runPartitioner();
 
     //! Inform partitioner of new pruned branches
@@ -148,7 +140,6 @@ namespace pt {
     QList<QThread*> threads;
     int remaining_th_;
     QVector<QMutex*> prune_mutex_;
-    // TODO remove QMutex prune_mutex_;
     QMutex complete_mutex_;
     QTimer *gui_update_timer_;
   };
@@ -162,14 +153,15 @@ namespace pt {
 
     //! Construct with provided values.
     ProblemNodeParams(const QVector<int> &assignment, int bid, 
-        quint64 part_a_count, quint64 part_b_count)
+        quint64 part_a_count, quint64 part_b_count, const QVector<int> &net_costs)
       : assignment(assignment), bid(bid), part_a_count(part_a_count),
-        part_b_count(part_b_count), cut_size(-1) {};
+        part_b_count(part_b_count), net_costs(net_costs), cut_size(-1) {};
 
     QVector<int> assignment;
     int bid;
     quint64 part_a_count;
     quint64 part_b_count;
+    QVector<int> net_costs;
     int cut_size;
   };
 
@@ -190,17 +182,6 @@ namespace pt {
 
   private:
 
-    /*! \brief Recursively assign blocks to partitions.
-     *
-     * This is basically "Steve's routine" but spawns new threads at a specified
-     * depth.
-     */
-    /* TODO remove
-    void assignNext(const QVector<int> &curr_assignment, int bid, int part_a_count,
-        int part_b_count, QVector<int> *best_assignment, int *best_cost);
-        */
-
-
     int tid_;               //!< Thread ID.
     sp::Graph graph_;       //!< Graph containing the problem.
     PSettings settings_;    //!< Partitioner settings.
@@ -209,6 +190,24 @@ namespace pt {
     QVector<int> *best_assignment_; //!< Pointer to best assignment so far.
     int *local_best_cost_;        //!< Pointer to best cost so far.
     Partitioner *parent_;
+  };
+
+  //! A wrapper class for running Partitioner with a busy wait.
+  class PartitionerBusyWrapper : public QObject
+  {
+  Q_OBJECT
+
+  public:
+    //! Constructor. Settings will be altered for headless operation.
+    PartitionerBusyWrapper(const sp::Graph &graph, 
+        PSettings settings=PSettings());
+
+    //! Run.
+    PResults runPartitioner();
+
+  private:
+
+    Partitioner *p; //!< The partitioner.
   };
 
 }

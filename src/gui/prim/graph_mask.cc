@@ -9,16 +9,24 @@
 
 using namespace gui;
 
+#define fast_2_pow(expo) ((expo==0) ? 1LL : 1LL << ((quint64)expo))
+
 // GraphHelper implementation
 
 qreal GraphHelper::bottomHorizontalNodes(int bid, int num_blocks)
 {
+  return fast_2_pow(num_blocks-bid);
+  /*
   return pow(2., num_blocks-bid);
+  */
 }
 
 qreal GraphHelper::interNodeWidth(int bid, int num_blocks)
 {
+  return bottomHorizontalNodes(0, num_blocks) / fast_2_pow(bid);
+  /*
   return bottomHorizontalNodes(0, num_blocks) / pow(2., bid);
+  */
 }
 
 qreal GraphHelper::leftmostNodeOffset(int bid, int num_blocks)
@@ -71,12 +79,9 @@ GraphMask::GraphMask(MaskType type, int bid, int num_blocks,
   graph_points_.resize(graph_pts_unscaled.size());
   // copy points over to local graph but multiple each with the scaling factor
   for (int i=0; i<graph_points_.size(); i++) {
-    // TODO remove graph_points_[i] = (graph_pts_unscaled[i] - bounding_rect.topLeft()) * sf;
     graph_points_[i] = graph_pts_unscaled[i] * sf;
   }
   // update position and dims
-  // TODO remove setPos(bounding_rect.topLeft()*sf);
-  // TODO remove bounding_rect_.setRect(0, 0, bounding_rect.width()*sf, bounding_rect.height()*sf);
   setPos(0, 0);
   bounding_rect_ = QRectF(bounding_rect.topLeft()*sf, bounding_rect.bottomRight()*sf);
 }

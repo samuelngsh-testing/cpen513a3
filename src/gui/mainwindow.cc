@@ -46,12 +46,6 @@ void MainWindow::readAndShowProblem(const QString &in_path)
   tchart_->initToGraph(graph_);
   invoker_->respondToNewGraph(*graph_);
   dw_invoker_->raise();
-
-  // TODO if size greater than 30, default to no GUI update
-
-  /* TODO remove
-  tchart_->clearTelemetries();
-  */
 }
 
 void MainWindow::runPartitioner(const pt::PSettings &p_settings)

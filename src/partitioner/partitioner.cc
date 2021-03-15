@@ -11,58 +11,7 @@
 
 using namespace pt;
 
-void assignNext(int tid, Partitioner *partitioner, const QVector<int> &curr_assignment,
-    int bid, quint64 part_a_count, quint64 part_b_count, QVector<int> *best_assignment,
-    int *local_best_cost, int global_best_cost)
-{
-  if (part_a_count > partitioner->maxBlocksInPart() 
-      || part_b_count > partitioner->maxBlocksInPart()) {
-    if (partitioner->settings().verbose) {
-      qDebug() << "Pruned imbalanced branch at" << curr_assignment;
-    }
-    partitioner->newPrune(tid, bid, curr_assignment);
-  } else if (partitioner->settings().prune_half && bid==1 && curr_assignment[0]==1) {
-    // prune right half of the tree as it's just a mirror of the left half
-    if (partitioner->settings().verbose) {
-      qDebug() << "Pruned right half of the tree.";
-    }
-    partitioner->newPrune(tid, bid, curr_assignment);
-    return;
-  } else if (partitioner->settings().prune_by_cost && global_best_cost >= 0 
-      && sp::Chip::calcCost(partitioner->graph(), curr_assignment) > global_best_cost) {
-    // cut this branch if the cost is already higher than best
-    if (partitioner->settings().verbose) {
-      qDebug() << "Pruned costly branch at" << curr_assignment;
-    }
-    partitioner->newPrune(tid, bid, curr_assignment);
-    return;
-  } else if (bid == partitioner->graph().numBlocks()) {
-    // reached leaf (caller would have already assigned the leaf node partitions)
-    // calc cost and update best
-    int leaf_cost = sp::Chip::calcCost(partitioner->graph(), curr_assignment);
-    if (partitioner->settings().verbose) {
-      qDebug() << "Leaf reached with cost " << leaf_cost << curr_assignment;
-    }
-    if (leaf_cost < *local_best_cost || *local_best_cost < 0) {
-      *local_best_cost = leaf_cost;
-      *best_assignment = curr_assignment;
-    }
-    partitioner->leafReachedExchange(tid, local_best_cost, global_best_cost);
-    return;
-  } else {
-    // recurse into left branch
-    QVector<int> ca_a = curr_assignment;
-    ca_a[bid] = 0;
-    ::assignNext(tid, partitioner, ca_a, bid+1, part_a_count+1, part_b_count, 
-        best_assignment, local_best_cost, global_best_cost);
-    // recurse into right branch
-    QVector<int> ca_b = curr_assignment;
-    ca_b[bid] = 1;
-    ::assignNext(tid, partitioner, ca_b, bid+1, part_a_count, part_b_count+1, 
-        best_assignment, local_best_cost, global_best_cost);
-    return;
-  }
-}
+#define fast_2_pow(expo) ((expo==0) ? 1LL : 1LL << ((quint64)expo))
 
 Partitioner::Partitioner(const sp::Graph &graph, const PSettings &settings)
   : graph_(graph), settings_(settings), best_cost_(-1)
@@ -130,7 +79,7 @@ void Partitioner::runPartitioner()
   bid_assignment_pairs_.resize(actual_th_count_);
   visited_leaves_.resize(actual_th_count_);
   pruned_leaves_.resize(actual_th_count_);
-  finished.resize(actual_th_count_); // TODO remove if signal end works
+  finished.resize(actual_th_count_);
   remaining_th_ = actual_th_count_;
   prune_mutex_.clear();
   qDebug() << QObject::tr("Spawning %1 threads").arg(actual_th_count_);
@@ -194,7 +143,6 @@ void Partitioner::runPartitioner()
 
 void Partitioner::newPrune(int tid, int bid, const QVector<int> &assignments)
 {
-  // TODO remove int add_pruned_leaves = std::llround(std::pow(2, graph_.numBlocks()-bid));
   if (tid == -1) {
     // special treatment if single threaded
     if (!settings_.no_dtv && !settings_.headless) {
@@ -211,10 +159,10 @@ void Partitioner::newPrune(int tid, int bid, const QVector<int> &assignments)
       bid_assignment_pairs_[tid].enqueue(qMakePair(bid, assignments));
     }
   }
-  if (tid < 0) tid = 0;
-  /* TODO uncomment
-  pruned_leaves_[tid] += std::llround(std::pow(2, graph_.numBlocks()-bid));
-  */
+  if (!settings_.no_pie) {
+    if (tid < 0) tid = 0;
+    pruned_leaves_[tid] += std::llround(fast_2_pow(graph_.numBlocks()-bid));
+  }
 }
 
 void Partitioner::leafReachedExchange(int tid, int *local_best_cost, int &global_best_cost)
@@ -223,7 +171,7 @@ void Partitioner::leafReachedExchange(int tid, int *local_best_cost, int &global
   if (bestCost() < 0 || (*local_best_cost >= 0 && *local_best_cost < bestCost())) {
     setBestCost(*local_best_cost);
   }
-  if (bestCost() < global_best_cost){
+  if (global_best_cost < 0 || bestCost() < global_best_cost){
     global_best_cost = bestCost();
   }
   visited_leaves_[tid]++;
@@ -241,7 +189,9 @@ void Partitioner::processCompletedThread()
   if (--remaining_th_ == 0) {
     // all done, wrap up
     qDebug() << "All threads have completed. Processing completion actions...";
-    gui_update_timer_->stop();
+    if (!settings_.headless) {
+      gui_update_timer_->stop();
+    }
     qint64 elapsed_time = wall_timer_.elapsed();
 
     qDebug() << "Tidying up after partitioning";
@@ -258,9 +208,15 @@ void Partitioner::processCompletedThread()
       }
     }
 
-    // emit the best partition
     if (!settings_.headless) {
+      // emit the best partition
       emit sig_bestPart(&graph_, best_assignment, elapsed_time);
+    } else {
+      // emit the result package
+      PResults results;
+      results.best_cut_size = best_cost;
+      results.wall_time = elapsed_time;
+      emit sig_packagedResults(results);
     }
   }
 
@@ -305,22 +261,6 @@ PartitionerThread::PartitionerThread(int tid, const sp::Graph &graph,
 
 void PartitionerThread::run()
 {
-  /*
-  quint64 part_a_count = 0;
-  quint64 part_b_count = 0;
-  for (int i=0; i<start_bid_; i++) {
-    if (init_assignment_[i] == 0) {
-      part_a_count++;
-    } else if (init_assignment_[i] == 1) {
-      part_b_count++;
-    } else {
-      qFatal("Partition thread encountered unassigned block.");
-    }
-  }
-  ::assignNext(tid_, parent_, init_assignment_, start_bid_, part_a_count, 
-      part_b_count, best_assignment_, local_best_cost_, -1);
-      */
-
   traverseProblemSpace();
 }
 
@@ -343,15 +283,16 @@ void PartitionerThread::traverseProblemSpace()
 
   // tracking vars
   int global_best_cost = -1;
+  QVector<int> net_costs(graph_.numNets(), -1);
 
   // init problem
   ProblemNodeParams p_init(init_assignment_, start_bid_, init_part_a_count, 
-      init_part_b_count);
+      init_part_b_count, net_costs);
   problem_stack.push(p_init);
 
   // for the 0-th thread, also visit right branch to prune it
   if (tid_ == 0 && settings_.prune_half) {
-    ProblemNodeParams p_r(init_assignment_, 1, 0, 1);
+    ProblemNodeParams p_r(init_assignment_, 1, 0, 1, net_costs);
     p_r.assignment[0] = 1;
     problem_stack.push(p_r);
   }
@@ -386,8 +327,8 @@ void PartitionerThread::traverseProblemSpace()
         p.cut_size = sp::Chip::calcCost(parent_->graph(), p.assignment);
       }
     }
-    if (parent_->settings().prune_by_cost && global_best_cost >= 0
-        && p.cut_size > global_best_cost) {
+    if (p.bid != parent_->graph().numBlocks() && parent_->settings().prune_by_cost 
+        && global_best_cost >= 0 && p.cut_size > global_best_cost) {
       // prune by cost
       if (parent_->settings().verbose) {
         qDebug() << "Pruned costly branch at" << p.assignment;
@@ -405,8 +346,8 @@ void PartitionerThread::traverseProblemSpace()
       parent_->leafReachedExchange(tid_, local_best_cost_, global_best_cost);
     } else {
       // calculate next cut sizes
-      int cut_size_r = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 1);
-      int cut_size_l = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 0);
+      int cut_size_r = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 1, p.net_costs);
+      int cut_size_l = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 0, p.net_costs);
       int next_bid = p.bid;
       // repurpose p as next left branch, make a copy for right branch
       ++p.bid;
@@ -421,23 +362,30 @@ void PartitionerThread::traverseProblemSpace()
       p.assignment[next_bid] = 0;
       ++p.part_a_count;
       problem_stack.push(p);
-
-      /* TODO remove
-      ProblemNodeParams next_p_l(p.assignment, p.bid+1, p.part_a_count, 
-          p.part_b_count);
-      ProblemNodeParams next_p_r(next_p_l);
-      // push right branch into traversal stack
-      next_p_r.cut_size = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 1);
-      next_p_r.assignment[p.bid] = 1;
-      next_p_r.part_b_count += 1;
-      problem_stack.push(next_p_r);
-      // push left branch into traversal stack
-      next_p_l.cut_size = p.cut_size + sp::Chip::calcCostDelta(graph_, p.assignment, p.bid, 0);
-      next_p_l.assignment[p.bid] = 0;
-      next_p_l.part_a_count += 1;
-      problem_stack.push(next_p_l);
-      */
     }
 
   }
+}
+
+PartitionerBusyWrapper::PartitionerBusyWrapper(const sp::Graph &graph,
+    PSettings settings)
+{
+  settings.headless = true;
+  settings.no_dtv = true;
+  settings.no_pie = true;
+  p = new Partitioner(graph, settings);
+}
+
+PResults PartitionerBusyWrapper::runPartitioner()
+{
+  PResults results;
+  connect(p, &Partitioner::sig_packagedResults,
+      [&results](const PResults &t_results) {
+        results = t_results;
+        qDebug() << "Received results from partitioner";
+      });
+
+  p->runPartitioner();
+
+  return results;
 }

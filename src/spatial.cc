@@ -43,9 +43,9 @@ Graph::Graph(const QString &f_path)
     } else {
       // read net definitions and add to Graph
       int num_blocks = line_items[0].toInt();
-      QList<int> conn_blocks;
+      QVector<int> conn_blocks;
       for (int it_id=1; it_id < line_items.size(); it_id++) {
-        conn_blocks.append(line_items[it_id].toInt());
+        conn_blocks.push_back(line_items[it_id].toInt());
       }
       if (num_blocks != conn_blocks.size()) {
         qFatal("Mismatching block counts encountered while reading input file.");
@@ -67,7 +67,7 @@ Graph::Graph(const QString &f_path)
   }
 }
 
-void Graph::setNet(int net_id, const QList<int> &conn_blocks)
+void Graph::setNet(int net_id, const QVector<int> &conn_blocks)
 {
   nets_[net_id] = conn_blocks;
   for (int b_id : conn_blocks) {
@@ -77,7 +77,7 @@ void Graph::setNet(int net_id, const QList<int> &conn_blocks)
 
 bool Graph::allBlocksConnected() const
 {
-  for (const QList<int> &block_net_ids : all_block_net_ids_) {
+  for (const QVector<int> &block_net_ids : all_block_net_ids_) {
     if (block_net_ids.isEmpty()) {
       return false;
     }
@@ -86,13 +86,7 @@ bool Graph::allBlocksConnected() const
 }
 
 
-Chip::Chip(const Graph &graph)
-  : graph_(graph)
-{
-  // initialize all block partitions to -1 (i.e., unassigned)
-  block_part_.resize(graph_.numBlocks());
-  for (auto it=block_part_.begin(); it!=block_part_.end(); it++) *it = -1;
-}
+// Chip class implementation
 
 int Chip::calcCost(const Graph &graph, const QVector<int> &block_part)
 {
@@ -104,15 +98,21 @@ int Chip::calcCost(const Graph &graph, const QVector<int> &block_part)
 }
 
 int Chip::calcCostDelta(const Graph &graph, const QVector<int> &block_part,
-    int bid, int part)
+    int bid, int part, QVector<int> &curr_net_costs)
 {
   // get the nets that associate with this block
-  const QList<int> &block_nets = graph.blockNets(bid);
+  const QVector<int> &block_nets = graph.blockNets(bid);
 
   // calculate the current cost of those nets
   int cost_i = 0;
   for (int nid : block_nets) {
-    cost_i += netCost(nid, graph, block_part);
+    int &net_cost_record = curr_net_costs[nid];
+    if (net_cost_record != 1) {
+      net_cost_record = netCost(nid, graph, block_part);
+    }
+    if (net_cost_record == 1) {
+      ++cost_i;
+    }
   }
 
   // calculate the new cost if bid is set to part
@@ -125,11 +125,6 @@ int Chip::calcCostDelta(const Graph &graph, const QVector<int> &block_part,
   return cost_f - cost_i;
 }
 
-int Chip::calcCostDelta(int bid, int part) const
-{
-  return calcCostDelta(graph_, block_part_, bid, part);
-}
-
 int Chip::netCost(int nid, const Graph &graph, const QVector<int> &block_part,
     int override_bid, int override_part)
 {
@@ -137,7 +132,7 @@ int Chip::netCost(int nid, const Graph &graph, const QVector<int> &block_part,
   bool in_part_a = false;
   bool in_part_b = false;
   // iterate through all blocks in the net to see if a crossing exists
-  const QList<int> &blocks = graph.net(nid);
+  const QVector<int> &blocks = graph.net(nid);
   for (int bid : blocks) {
     // get the assigned partition or take the overriden partition
     int part = (override_bid == bid) ? override_part : block_part[bid];
@@ -149,9 +144,4 @@ int Chip::netCost(int nid, const Graph &graph, const QVector<int> &block_part,
     if (in_part_a && in_part_b) break;
   }
   return (in_part_a && in_part_b) ? 1 : 0;
-}
-
-int Chip::netCost(int nid, int override_bid, int override_part) const
-{
-  return netCost(nid, graph_, block_part_, override_bid, override_part);
 }

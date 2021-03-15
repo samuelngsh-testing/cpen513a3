@@ -33,6 +33,7 @@ void Invoker::invokePlacement()
   p_set.prune_half = cb_prune_half->isChecked();
   p_set.prune_by_cost = cb_prune_by_cost->isChecked();
   p_set.no_dtv = cb_no_dtv->isChecked();
+  p_set.no_pie = cb_no_pie->isChecked();
   p_set.verbose = cb_verbose->isChecked();
   p_set.sanity_check = cb_sanity_check->isChecked();
 
@@ -60,6 +61,9 @@ void Invoker::initGui()
   cb_no_dtv = new QCheckBox;
   cb_no_dtv->setChecked(p_set.no_dtv);
 
+  cb_no_pie = new QCheckBox;
+  cb_no_pie->setChecked(p_set.no_pie);
+
   cb_verbose = new QCheckBox;
   cb_verbose->setChecked(p_set.verbose);
 
@@ -81,6 +85,7 @@ void Invoker::initGui()
   // NOTE just leaving this setting always default: fl_gen->addRow("Prune half tree", cb_prune_half);
   fl_gen->addRow("Prune by cost", cb_prune_by_cost);
   fl_gen->addRow("No viewer update", cb_no_dtv);
+  fl_gen->addRow("Pie chart show visited only", cb_no_pie);
   fl_gen->addRow("Verbose", cb_verbose);
   fl_gen->addRow("Sanity check", cb_sanity_check);
 

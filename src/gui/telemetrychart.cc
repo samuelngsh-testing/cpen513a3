@@ -34,43 +34,6 @@ void TelemetryChart::updateTelemetry(quint64 visited, quint64 pruned, int best_c
   l_unvisited_->setText(QString("%1").arg(total_leaves_-visited-pruned));
 }
 
-/* TODO remove
-void TelemetryChart::addTelemetry(int cost, float T, float p_accept, int rw_dim)
-{
-  int x_step = std::max(cost_series->count(), T_series->count());
-  // update values
-  if (cost >= 0) {
-    cost_series->append(x_step, cost);
-    max_cost = std::max(max_cost, cost);
-    l_curr_cost->setText(QString("%1").arg(cost));
-  }
-  if (T >= 0) {
-    T_series->append(x_step, T);
-    max_T = std::max(max_T, T);
-    l_curr_T->setText(QString("%1").arg(T));
-  }
-  if (p_accept >= 0) {
-    p_accept_series->append(x_step, p_accept);
-    max_p_accept = std::max(max_p_accept, p_accept);
-  }
-  if (rw_dim >= 0) {
-    rw_series->append(x_step, rw_dim);
-    max_rw_dim = std::max(max_rw_dim, rw_dim);
-  }
-  // update ticks and ranges
-  axis_x->setRange(0, cost_series->count()-1);
-  axis_x_rw->setRange(0, p_accept_series->count()-1);
-  axis_y_cost->setRange(0, max_cost);
-  axis_y_T->setRange(0, max_T);
-  axis_y_pa->setRange(0, max_p_accept);
-  axis_y_rw->setRange(0, max_rw_dim);
-  axis_y_cost->applyNiceNumbers();
-  axis_y_T->applyNiceNumbers();
-  axis_y_pa->applyNiceNumbers();
-  axis_y_rw->applyNiceNumbers();
-}
-*/
-
 void TelemetryChart::clearTelemetries()
 {
   ps_visited_->setValue(0);

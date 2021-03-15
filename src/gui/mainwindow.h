@@ -16,8 +16,6 @@
 #include "invoker.h"
 #include "telemetrychart.h"
 #include "partitioner/partitioner.h"
-//#include "invoker.h"
-// TODO remove #include "telemetrychart.h"
 
 namespace gui {
 
@@ -56,7 +54,6 @@ namespace gui {
     void loadProblemFromFileDialog();
 
     // Private variables
-    // TODO remove sp::Chip *chip_=nullptr;    //!< Pointer to the chip.
     sp::Graph *graph_=nullptr;      //!< Pointer to the current graph.
     DTViewer *dt_viewer_=nullptr;   //!< Pointer to the binary tree viewer.
     PartViewer *p_viewer_=nullptr;  //!< Partition viewer.

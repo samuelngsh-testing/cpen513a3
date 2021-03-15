@@ -19,7 +19,7 @@ namespace gui {
   {
   public:
     //! Construct a net that contains the specified block IDs and provided locs.
-    Net(int nid, int num_nets, const QList<int> &bids,
+    Net(int nid, int num_nets, const QVector<int> &bids,
         const QVector<QPoint> &block_locs, int x_divide);
 
     //! Update the block locations with a new full block list.
@@ -38,9 +38,9 @@ namespace gui {
 
     int nid_;               //!< The Net ID.
     int num_nets_;          //!< Total net count.
-    QList<int> bids_;       //!< All block IDs in this net.
-    QList<int> bids_a_;     //!< Block IDs in partition a.
-    QList<int> bids_b_;     //!< Block IDs in partition b.
+    QVector<int> bids_;     //!< All block IDs in this net.
+    QVector<int> bids_a_;   //!< Block IDs in partition a.
+    QVector<int> bids_b_;   //!< Block IDs in partition b.
     int leader_a_;          //!< Leader block in partition a.
     int leader_b_;          //!< Leader block in partition b.
     QMap<int,QPoint> locs_; //!< Block locations.

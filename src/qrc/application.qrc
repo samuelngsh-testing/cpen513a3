@@ -2,9 +2,13 @@
 <qresource>
     <!-- test problem files -->
     <file>test_problems/atest2.txt</file>
-    <file>test_problems/mini_props.json</file>
+    <file>test_problems/atest2_props.json</file>
     <file>test_problems/atest3.txt</file>
+    <file>test_problems/atest3_props.json</file>
+    <file>test_problems/atest4.txt</file>
+    <file>test_problems/atest4_props.json</file>
     <file>test_problems/baby.txt</file>
+    <file>test_problems/baby_props.json</file>
     <!-- benchmark files -->
     <file>benchmarks/cc.txt</file>
     <file>benchmarks/cm82a.txt</file>

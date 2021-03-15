@@ -10,7 +10,7 @@
 
 using namespace gui;
 
-Net::Net(int nid, int num_nets, const QList<int> &bids,
+Net::Net(int nid, int num_nets, const QVector<int> &bids,
     const QVector<QPoint> &block_locs, int x_divide)
   : nid_(nid), num_nets_(num_nets), bids_(bids)
 {
@@ -69,7 +69,7 @@ void Net::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
   painter->setPen(st::Settings::colorGenerator(nid_, num_nets_));
 
   // lambda function for drawing lines for the specified partition params
-  auto draw_lines_in_part = [this,sf,offset,&painter](const QList<int> &bids, int leader)
+  auto draw_lines_in_part = [this,sf,offset,&painter](const QVector<int> &bids, int leader)
   {
     for (int bid : bids) {
       if (bid == leader) {

@@ -48,9 +48,8 @@ namespace gui {
     QGraphicsScene *scene_=nullptr;   //!< Pointer to the scene object.
     sp::Graph *graph_=nullptr;        //!< Graph pointer.
     QVector<QPoint> block_locs_;      //!< Vector of block locations.
-    QList<Net*> net_prims_;           //!< Vector of net primitive pointers.
+    QVector<Net*> net_prims_;         //!< Vector of net primitive pointers.
     QMap<QPair<int,int>,Cell*> cell_prims_; //!< Vector of block primitive pointers.
-    // TODO some var to keep track of current full grid size
 
   };
 

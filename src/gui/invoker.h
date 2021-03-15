@@ -52,23 +52,7 @@ namespace gui {
     QCheckBox *cb_no_dtv;
     QCheckBox *cb_verbose;
     QCheckBox *cb_sanity_check;
-
-    /* TODO remove
-    // Private variables, the names basically correspond to pc::SASettings.
-    QComboBox *cbb_t_schd;
-    QDoubleSpinBox *sb_decay_b;
-    QSpinBox *sb_swap_fact;
-    QSpinBox *sb_max_its;
-    QSpinBox *sb_max_its_cost_unchanged;
-    QGroupBox *gb_use_rw;
-    QDoubleSpinBox *sb_p_upper;
-    QDoubleSpinBox *sb_p_lower;
-    QSpinBox *sb_min_rw_dim;
-    QSpinBox * sb_rw_dim_delta;
-    QCheckBox *cb_sanity_check;
-    QComboBox *cbb_gui_up;
-    QCheckBox *cb_show_stdout;
-    */
+    QCheckBox *cb_no_pie;
   };
 
 

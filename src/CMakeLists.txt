@@ -27,7 +27,6 @@ qt5_add_resources(CUSTOM_RSC qrc/application.qrc)
 # source and header files
 set(LIB_SOURCES
     spatial.cc
-    benchmarker.cc
     partitioner/partitioner.cc
     gui/settings.cc
     gui/mainwindow.cc
@@ -43,7 +42,6 @@ set(LIB_SOURCES
     )
 set(LIB_HEADERS
     spatial.h
-    benchmarker.h
     partitioner/partitioner.h
     gui/settings.h
     gui/mainwindow.h
@@ -83,14 +81,13 @@ set_target_properties(partitioner PROPERTIES
 )
 
 # build unit tests
-# TODO write unit tests
-#add_executable(partitioner_tests tests/partitioner_tests.cpp ${LIB_SOURCES} ${LIB_HEADERS} ${CUSTOM_RSC})
-#target_link_libraries(partitioner_tests Qt5::Test ${LIB_LINKS} ${CMAKE_THREAD_LIBS_INIT})
-#add_test(partitioner_tests partitioner_tests)
-#set_tests_properties(partitioner_tests PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
-#add_custom_command(TARGET partitioner_tests
-#    POST_BUILD
-#    COMMAND ctest -C $<CONFIGURATION> --output-on-failure)
+add_executable(partitioner_tests tests/partitioner_tests.cpp ${LIB_SOURCES} ${LIB_HEADERS} ${CUSTOM_RSC})
+target_link_libraries(partitioner_tests Qt5::Test ${LIB_LINKS} ${CMAKE_THREAD_LIBS_INIT})
+add_test(partitioner_tests partitioner_tests)
+set_tests_properties(partitioner_tests PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+add_custom_command(TARGET partitioner_tests
+    POST_BUILD
+    COMMAND ctest -C $<CONFIGURATION> --output-on-failure)
 
 # install the binary
 install(TARGETS partitioner

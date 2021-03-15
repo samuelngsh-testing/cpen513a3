@@ -74,9 +74,10 @@ void PartViewer::showGraphPart(sp::Graph *graph, const QVector<int> &block_part)
   }
 
   // create GUI primitives for nets
+  net_prims_.resize(graph_->numNets());
   for (int nid=0; nid<graph_->numNets(); nid++) {
     Net *net = new Net(nid, graph_->numNets(), graph_->net(nid), block_locs_, x_divide);
-    net_prims_.append(net);
+    net_prims_[nid] = net;
     scene_->addItem(net);
   }
 
